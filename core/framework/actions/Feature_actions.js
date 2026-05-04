@@ -6,6 +6,10 @@
  * - `.feature_id`: {@link string} - Identifier. The {@link naissance.Feature} ID to target changes for, if any.
  * <br>
  * - ##### Extraneous Commands:
+ * - `.add_variable`: {@link Object}
+ *   - `.date`: {@link Object}|{@link number}|{@link string} - If string, either 'start'/'end'.
+ *   - `.key`: {@link string}
+ *   - `.value`: {@link any}
  * - `.clean_keyframes`: {@link Array}<{@link string}> - Cleans geometry keyframes for default symbols, redundant names. Options: ["symbol"]
  * - `.clean_geometry_tags`: {@link boolean}
  * - `.delete_feature`: {@link boolean}
@@ -26,6 +30,23 @@ naissance.Feature.parseAction = function (arg0_json) {
 	
 	//Parse commands for feature_obj
 	if (feature_obj) {
+		//add_variable
+		if (json.add_variable !== undefined) {
+			let all_geometries = feature_obj.getAllGeometries();
+			let all_geometry_ids = [];
+			
+			//Iterate over all_geometries and append IDs for parsing
+			for (let i = 0; i < all_geometries.length; i++)
+				if (all_geometries[i].id) all_geometry_ids.push(all_geometries[i].id);
+			naissance.Geometry.parseActionForGeometries(all_geometry_ids, {
+				command: "add_variable",
+				key: "add_variable",
+				name: "Add F.Variable",
+				type: "Geometry",
+				value: json.add_variable
+			});
+		}
+		
 		//clean_keyframes
 		if (json.clean_keyframes) {
 			let all_geometries = feature_obj.getAllGeometries();

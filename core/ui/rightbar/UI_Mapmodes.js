@@ -172,10 +172,16 @@ global.UI_Mapmodes = class extends ve.Class {
 		let map_settings = main.map.settings;
 		
 		if (!map_settings.enabled_mapmodes) map_settings.enabled_mapmodes = [];
+		if (!map_settings.mapmodes) map_settings.mapmodes = {};
 		
 		//Iterate over all naissance.Mapmode.instances and determine which are already in the local savefile
 		for (let i = 0; i < naissance.Mapmode.instances.length; i++) {
 			let local_mapmode = naissance.Mapmode.instances[i];
+			
+			let attributes_obj = {};
+			let is_enabled = map_settings.enabled_mapmodes.includes(local_mapmode.id);
+			
+			if (is_enabled) attributes_obj["data-is-enabled"] = "true";
 			
 			let local_mapmode_button = veButton((v, e) => {
 				let mapmode_index = map_settings.enabled_mapmodes.indexOf(local_mapmode.id);
@@ -186,14 +192,52 @@ global.UI_Mapmodes = class extends ve.Class {
 					map_settings.enabled_mapmodes.push(local_mapmode.id);
 				
 				//Update attribute; save map settings
-				e.element.setAttribute("data-is-enabled", map_settings.enabled_mapmodes.includes(local_mapmode.id));
+				let is_enabled = map_settings.enabled_mapmodes.includes(local_mapmode.id);
+					if (is_enabled) {
+						e.element.setAttribute("data-is-enabled", "true");
+					} else {
+						e.element.removeAttribute("data-is-enabled");
+					}
 				this.draw();
 			}, {
 				name: `${(local_mapmode.options.icon) ? `<icon>${local_mapmode.options.icon}</icon>&nbsp;&nbsp;` : ""}${local_mapmode.options.name}`,
-				attributes: {
-					"data-is-enabled": map_settings.enabled_mapmodes.includes(local_mapmode.id)
-				},
+				attributes: attributes_obj,
 				tooltip: local_mapmode.options.tooltip
+			});
+			local_mapmode_button.element.addEventListener("contextmenu", (e) => {
+				if (this.edit_mapmode_window) this.edit_mapmode_window.close();
+				
+				//Declare local instance variables
+				naissance.Mapmode.getZIndexes(); //Refresh Z-indexes
+				
+				this.edit_mapmode_window = veWindow({
+					information: veHTML(() => {
+						let current_index = main.user.mapmodes.indexOf(local_mapmode.id);
+						
+						return `${(local_mapmode.options.description) ? `${local_mapmode.options.description}<br>` : ""}${(current_index !== -1) ? `Order: ${current_index}` : ""}`
+					}),
+					map_display: veSelect({
+						bottom: {
+							name: "Underlay"
+						},
+						top: {
+							name: "Overlay"
+						}
+					}, {
+						name: "Map Display:",
+						onuserchange: (v) => {
+							if (!map_settings.mapmodes[local_mapmode.id]) map_settings.mapmodes[local_mapmode.id] = {};
+								let local_settings = map_settings.mapmodes[local_mapmode.id];
+								local_settings.layer = v;
+							naissance.Mapmode.draw();
+						},
+						selected: local_mapmode.options.layer
+					})
+				}, {
+					name: `Edit ${local_mapmode.options.name}`,
+					can_rename: false,
+					width: "14rem"
+				});
 			});
 			
 			components_obj[local_mapmode.id] = local_mapmode_button;

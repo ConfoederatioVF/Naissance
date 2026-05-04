@@ -77,6 +77,156 @@ naissance.Feature = class extends ve.Class {
 		//Return statement
 		return veInterface({
 			actions_palette: veSearchSelect({
+				add_descriptions: veButton(() => { //[WIP] - Add line_break toggle, whole line/substring searching for duplicates
+					//Set defaults
+					if (this.ui.add_descriptions_avoid_duplicates === undefined) this.ui.add_descriptions_avoid_duplicates = true;
+					if (this.ui.add_descriptions_insert_at === undefined) this.ui.add_descriptions_insert_at = "append";
+					if (this.ui.add_descriptions_insert_newline === undefined) this.ui.add_descriptions_insert_newline = true;
+					if (this.ui.add_descriptions_search === undefined) this.ui.add_descriptions_search = "substring";
+					
+					if (this.add_descriptions_window) this.add_descriptions_window.close();
+					this.add_descriptions_window = veWindow({
+						value: veWordProcessor(this.ui.add_descriptions_value, {
+							onuserchange: (v) => this.ui.add_descriptions_value = v,
+							width: 99,
+							x: 0, y: 0
+						}),
+						duplicate_filtering: veInterface({
+							avoid_duplicates: veToggle(this.ui.add_descriptions_avoid_duplicates, {
+								name: "Avoid Duplicates",
+								onuserchange: (v) => this.ui.add_descriptions_avoid_duplicates = v
+							}),
+							case_sensitive: veToggle(this.ui.add_descriptions_case_sensitive, {
+								name: "Case Sensitive",
+								onuserchange: (v) => this.ui.add_descriptions_case_sensitive = v
+							}),
+							search: veSelect({
+								substring: { name: "Substring" },
+								whole_line: { name: "Whole Line" }
+							}, {
+								name: "Search",
+								selected: this.ui.add_descriptions_search,
+								onuserchange: (v) => this.ui.add_descriptions_search = v
+							})
+						}, { name: "Duplicate Filtering", x: 0, y: 1 }),
+						insert_options: veInterface({
+							insert_at: veSelect({
+								append: { name: "Append" },
+								prepend: { name: "Prepend" }
+							}, {
+								name: "Insert At",
+								onuserchange: (v) => this.ui.add_descriptions_insert_at = v,
+								selected: this.ui.add_descriptions_insert_at
+							}),
+							insert_newline: veToggle(this.ui.add_descriptions_insert_newline, {
+								name: "Insert Newline",
+								onuserchange: (v) => this.ui.add_descriptions_insert_newline = v
+							}),
+						}, { name: "Insert Options", x: 1, y: 1 }),
+						confirm: veButton(() => {
+							if (!(this.ui.add_descriptions_value?.length > 0)) {
+								veToast(`<icon>warning</icon> You must provide a valid description to append/prepend.`);
+								return;
+							}
+							
+							//Declare local instance variables
+							let all_geometries = this.getAllGeometries();
+							
+							//Iterate over all_geometries and add to .metadata.description
+							for (let i = 0; i < all_geometries.length; i++) {
+								if (!all_geometries[i].metadata) all_geometries[i].metadata = {};
+								if (!all_geometries[i].metadata.description) all_geometries[i].metadata.description = "";
+								
+								let local_description = all_geometries[i].metadata.description;
+								
+								all_geometries[i].metadata.description = String.editAddToString(local_description, this.ui.add_descriptions_value, {
+									avoid_duplicates: this.ui.add_descriptions_avoid_duplicates,
+									case_sensitive: this.ui.add_descriptions_case_sensitive,
+									insert_at: this.ui.add_descriptions_insert_at,
+									insert_newline: this.ui.add_descriptions_insert_newline,
+									search: this.ui.add_descriptions_search,
+								});
+								
+								if (all_geometries[i].variables_ui) all_geometries[i].variables_ui.remove(); //Free previous variables_ui
+								all_geometries[i].drawVariablesEditor();
+							}
+							veToast(`Added descriptions for ${all_geometries.length} geometries in ${this.name}.`);
+						}, { name: "Confirm" })
+					}, {
+						name: "Add Descriptions",
+						can_rename: false,
+						width: "30rem"
+					})
+				}, { name: "Add Descriptions" }),
+				add_field: veButton(() => {
+					
+				}, { name: "Add Field", disabled: true }),
+				add_variable: veButton(() => {
+					if (this.add_variable_window) this.add_variable_window.close();
+					this.add_variable_window = veWindow({
+						variable_key: veText(this.ui.add_variable_key, {
+							name: "Field/Variable Key",
+							onuserchange: (v) => this.ui.add_variable_key = v
+						}),
+						value: veText(this.ui.add_variable_value, {
+							name: "Value",
+							onuserchange: (v) => {
+								if (!isNaN(parseFloat(v))) {
+									this.ui.add_variable_value = parseFloat(v);
+								} else {
+									this.ui.add_variable_value = v;
+								}
+							}
+						}),
+						keyframe: veSelect({
+							end: { name: "End Date" },
+							manual: { name: "Manual Date" },
+							start: { name: "Start Date" },
+						}, {
+							name: "Keyframe",
+							selected: (this.ui.add_variable_keyframe) ? this.ui.add_variable_keyframe : "start",
+							onuserchange: (v) => this.ui.add_variable_keyframe = v
+						}),
+						date: veDate(main.date, {
+							name: "Date",
+							limit: () => this.ui.add_variable_keyframe === "manual",
+							onuserchange: (v) => this.ui.add_variable_date = v
+						}),
+						
+						confirm: veButton(() => {
+							if (!this.ui.add_variable_key) {
+								veToast(`<icon>warning</icon> You must provide a valid variable key.`);
+								return;
+							}
+							
+							let actual_date;
+								if (this.ui.add_variable_keyframe === "manual") {
+									actual_date = (this.ui.add_variable_date) ? this.ui.add_variable_date : main.date;
+								} else {
+									actual_date = (this.ui.add_variable_keyframe) ? this.ui.add_variable_keyframe : "start";
+								}
+							DALS.Timeline.parseAction({
+								options: { name: "Add Variable", key: `add_variable_${this.ui.add_variable_key}` },
+								value: [{
+									type: "Feature",
+									feature_id: this.id,
+									add_variable: {
+										date: actual_date,
+										key: this.ui.add_variable_key,
+										value: (this.ui.add_variable_value !== undefined) ? this.ui.add_variable_value : ""
+									}
+								}]
+							});
+						}, { name: "Confirm" })
+					}, { 
+						name: "Add Variable", 
+						can_rename: false,
+						width: "20rem"
+					});
+				}, { name: "Add Variable" }),
+				clear_descriptions: veButton(() => {
+					
+				}, { name: "Clear Descriptions", disabled: true }),
 				clean_geometry_tags: veButton(() => {
 					veConfirm(`Are you sure you want to clean all geometry tags in ${this.name}?`, {
 						special_function: () => {
@@ -92,7 +242,6 @@ naissance.Feature = class extends ve.Class {
 						}
 					});
 				}, { name: "Clean Geometry Tags" }),
-				
 				clean_keyframes: veButton(() => {
 					if (this.clean_keyframes_window) this.clean_keyframes_window.close();
 					this.clean_keyframes_window = veWindow({
@@ -188,7 +337,95 @@ naissance.Feature = class extends ve.Class {
 							} catch (e) { console.error(e); }
 						}, { name: "Confirm" })
 					}, { name: "Simplify Polygons", can_rename: false });
-				}, { name: "Simplify Polygons" })
+				}, { name: "Simplify Polygons" }),
+				remove_field: veButton(() => {
+					
+				}, { name: "Remove Field", disabled: true }),
+				remove_variable: veButton(() => {
+					
+				}, { name: "Remove Variable", disabled: true }),
+				replace_descriptions: veButton(() => { //[WIP] - Should be changed to replace_descriptions
+					if (this.replace_descriptions_window) this.replace_descriptions_window.close();
+					this.replace_descriptions_window = veWindow({
+						find: veInterface({
+							find_value: veWordProcessor(this.ui.replace_descriptions_find_value, {
+								onuserchange: (v) => this.ui.replace_descriptions_find_value = v
+							}),
+						}, { name: "Find", open: true }),
+						replace: veInterface({
+							replace_value: veWordProcessor(this.ui.replace_descriptions_replace_value, {
+								onuserchange: (v) => this.ui.replace_descriptions_replace_value = v
+							}),
+						}, { name: "Replace", open: true }),
+						information: veHTML("If no replace value is provided, the found value(s) will automatically be removed."),
+						
+						match_filtering: veInterface({
+							case_sensitive: veToggle(this.ui.replace_descriptions_case_sensitive, {
+								name: "Case Sensitive",
+								onuserchange: (v) => this.ui.replace_descriptions_case_sensitive = v
+							}),
+							remove_all: veToggle(this.ui.replace_descriptions_remove_all, {
+								name: "Remove All",
+								onuserchange: (v) => this.ui.replace_descriptions_remove_all = v
+							}),
+							remove_order: veSelect({
+								first: { name: "First-to-last" },
+								last: { name: "Last-to-first" }
+							}, {
+								name: "Remove Order",
+								onuserchange: (v) => this.ui.replace_descriptions_remove_order = v,
+								selected: (this.ui.replace_descriptions_remove_order) ? 
+									this.ui.replace_descriptions_remove_order : "first"
+							}),
+							search: veSelect({
+								substring: { name: "Substring" },
+								whole_line: { name: "Whole Line" }
+							}, {
+								name: "Search",
+								onuserchange: (v) => this.ui.replace_descriptions_search = v,
+								selected: (this.ui.replace_descriptions_search) ? 
+									this.ui.replace_descriptions_search : "substring"
+							})
+						}, { name: "Match Filtering", x: 0, y: 2 }),
+						confirm: veButton(() => {
+							if (!(this.ui.replace_descriptions_find_value?.length > 0)) {
+								veToast(`<icon>warning</icon> You must provide a valid value to find.`);
+								return;
+							}
+							
+							//Declare local instance variables
+							let all_geometries = this.getAllGeometries();
+							
+							//Iterate over all_geometries and add to .metadata.description
+							for (let i = 0; i < all_geometries.length; i++) {
+								if (!(all_geometries[i]?.metadata?.description)) continue;
+								
+								let local_description = all_geometries[i].metadata.description;
+								
+								all_geometries[i].metadata.description = String.editReplaceInString(
+									local_description, 
+									this.ui.replace_descriptions_find_value, 
+									this.ui.replace_descriptions_replace_value, 
+									{
+										case_sensitive: this.ui.replace_descriptions_case_sensitive,
+										remove_all: this.ui.replace_descriptions_remove_all,
+										remove_order: this.ui.replace_descriptions_remove_order,
+										search: this.ui.replace_descriptions_search
+									});
+								if (all_geometries[i].metadata.description?.length === 0) 
+									delete all_geometries[i].metadata.description;
+								
+								if (all_geometries[i].variables_ui) all_geometries[i].variables_ui.remove(); //Free previous variables_ui
+								all_geometries[i].drawVariablesEditor();
+							}
+							veToast(`Replaced descriptions for ${all_geometries.length} geometries in ${this.name}.`);
+						})
+					}, {
+						name: "Replace Descriptions",
+						can_rename: false,
+						width: "30rem"
+					});
+				}, { name: "Replace Descriptions" }),
 			}, {
 				display: "inline",
 				placeholder: "Search for action ...",
@@ -201,7 +438,8 @@ naissance.Feature = class extends ve.Class {
 			})
 		}, {
 			name: "Actions",
-			style: { padding: 0 }
+			style: { padding: 0 },
+			width: 99
 		});
 	}
 	

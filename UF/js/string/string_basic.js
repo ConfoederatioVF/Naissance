@@ -88,13 +88,22 @@
 	 *
 	 * @param {string} arg0_string - The string to compare with.
 	 * @param {string} arg1_string - The other string to compare with.
+	 * @param {Object} [arg2_options]
+	 *  @param {boolean} [arg2_options.trim=false]
 	 *
 	 * @returns {boolean}
 	 */
-	String.equalsIgnoreCase = function (arg0_string, arg1_string) {
+	String.equalsIgnoreCase = function (arg0_string, arg1_string, arg2_options) {
 		//Convert from parameters
 		let string = arg0_string;
 		let ot_string = arg1_string;
+		let options = (arg2_options) ? arg2_options : {};
+		
+		//Trim if available
+		if (options.trim) {
+			string = string.trim();
+			ot_string = ot_string.trim();
+		}
 		
 		//Return statement
 		return (string.toLowerCase() === ot_string.toLowerCase());

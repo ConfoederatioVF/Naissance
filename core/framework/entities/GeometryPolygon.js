@@ -43,6 +43,16 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			}, {
 				name: "Debug",
 				x: 2, y: 1
+			}),
+			
+			actions_bar: veRawInterface(this.drawHierarchyDatatypeGenerics(), {
+				name: "<b>Quick Actions:</b>",
+				style: {
+					alignItems: "center",
+					display: "flex",
+					"[component='ve-button']": { marginLeft: "var(--padding)" }
+				},
+				width: 99
 			})
 		}, { is_folder: false });
 		this.edit_symbol_ui = veInterface({
@@ -51,7 +61,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			edit_stroke: main.interfaces.edit_geometry_line.draw({ _id: () => this.id, name: "Stroke" })
 		}, { name: "Edit Symbol" });
 		this.keyframes_ui = veInterface({}, {
-			name: "Keyframes", open: true
+			name: `Keyframes`, open: true
 		});
 		super.drawVariablesEditor();
 		
@@ -220,6 +230,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				"data-selected-geometry": (main.brush.selected_geometry?.id === this.id),
 				"data-type": "GeometryPolygon"
 			},
+			do_not_display: true,
 			instance: this,
 			name: this.name,
 			name_options: {

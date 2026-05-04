@@ -177,6 +177,7 @@ naissance.Mapmode = class extends ve.Class { //[WIP] - Finish class body
 		let bottom_mapmodes = 0;
 		let current_mapmodes = main.user.mapmodes;
 		let map_defines = config.defines.map;
+		let map_settings = main.map.settings;
 		let return_obj = {};
 		
 		//Iterate over current_mapmodes in order
@@ -188,7 +189,12 @@ naissance.Mapmode = class extends ve.Class { //[WIP] - Finish class body
 					break;
 				}
 			
-			if (local_mapmode.options.layer === "bottom") {
+			//Fetch local_layer
+			if (map_settings?.mapmodes?.[local_mapmode.id]?.layer)
+				local_mapmode.options.layer = map_settings.mapmodes[local_mapmode.id].layer;
+			let local_layer = local_mapmode.options.layer;
+			
+			if (local_layer === "bottom") {
 				bottom_mapmodes++;
 				return_obj[local_mapmode.id] = map_defines.default_z_indices[0] - bottom_mapmodes;
 			} else {

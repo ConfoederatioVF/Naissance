@@ -114,12 +114,12 @@
 		let position_three = 0;
 		let position_four = 0;
 		let is_resizing = false;
-		let resize_edge = null;
-		let resize_threshold = 5; //Pixels from edge to trigger resize
 		let initial_width = 0;
 		let initial_height = 0;
 		let initial_left = 0;
 		let initial_top = 0;
+		let resize_edge = null;
+		let resize_threshold = 5; //Pixels from edge to trigger resize
 		
 		//Add resize handle styles
 		el.style.position = "absolute";

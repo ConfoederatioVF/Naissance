@@ -68,7 +68,7 @@ naissance.History = class extends ve.Class {
 					if (current_val.variables)
 						cleaned_obj.variables = { ...current_val.variables };
 					
-					// Check nested variables
+					//Check nested variables
 					if (current_val.variables && prev_val && prev_val.variables) {
 						for (let key in current_val.variables)
 							if (Boolean.isDeepEqual(current_val.variables[key], prev_val.variables[key])) {
@@ -149,68 +149,71 @@ naissance.History = class extends ve.Class {
 				}),
 				localisation: veHTML(() => 
 					(local_value.localisation) ? local_value.localisation : "", { x: 1, y: 0 }),
-				jump_to_date: veButton((e) => {
-					DALS.Timeline.parseAction({
-						options: { name: "Set Date", key: "load_date" },
-						value: [
-							{ type: "global", set_date: Date.convertTimestampToDate(local_key) },
-							{ type: "global", refresh_date: true }
-						]
-					});
-				}, { 
-					name: "<icon>arrow_forward</icon>",
-					tooltip: "Jump to Date", 
-					style: { cursor: "pointer" }, 
-					x: 2, y: 0 
-				}),
-				move_keyframe: veButton(() => {
-					let move_keyframe_window = veWindow({
-						new_date: veDate(JSON.parse(JSON.stringify(local_value.date)), { name: "New Date" }),
-						confirm: veButton(() => {
-							DALS.Timeline.parseAction({
-								options: { name: "Move Keyframe", key: "move_keyframe" },
-								value: [{ 
-									type: "Geometry", 
-									geometry_id: this.options._id(), 
-									move_keyframe: {
-										date: local_value.date,
-										ot_date: move_keyframe_window.new_date.v
-									}
-								}]
-							});
-							move_keyframe_window.close();
-						})
+				actions_bar: veRawInterface({
+					jump_to_date: veButton((e) => {
+						DALS.Timeline.parseAction({
+							options: { name: "Set Date", key: "load_date" },
+							value: [
+								{ type: "global", set_date: Date.convertTimestampToDate(local_key) },
+								{ type: "global", refresh_date: true }
+							]
+						});
 					}, {
-						can_rename: false,
-						name: "Move Keyframe"
-					});
+						name: "<icon>arrow_forward</icon>",
+						tooltip: "Jump to Date"
+					}),
+					move_keyframe: veButton(() => {
+						let move_keyframe_window = veWindow({
+							new_date: veDate(JSON.parse(JSON.stringify(local_value.date)), { name: "New Date" }),
+							confirm: veButton(() => {
+								DALS.Timeline.parseAction({
+									options: { name: "Move Keyframe", key: "move_keyframe" },
+									value: [{
+										type: "Geometry",
+										geometry_id: this.options._id(),
+										move_keyframe: {
+											date: local_value.date,
+											ot_date: move_keyframe_window.new_date.v
+										}
+									}]
+								});
+								move_keyframe_window.close();
+							})
+						}, {
+							can_rename: false,
+							name: "Move Keyframe"
+						});
+					}, {
+						name: "<icon>height</icon>",
+						tooltip: "Move Keyframe to Date"
+					}),
+					remove_keyframe: veButton((e) => {
+						DALS.Timeline.parseAction({
+							options: { name: "Delete Keyframe", key: "delete_keyframe" },
+							value: [
+								{ type: "Geometry", geometry_id: this.options._id(), remove_keyframe: local_key },
+								{ type: "global", refresh_date: true }
+							]
+						});
+					}, {
+						name: "<icon>delete</icon>",
+						tooltip: "Delete Keyframe"
+					})
 				}, {
-					name: "<icon>height</icon>",
-					tooltip: "Move Keyframe to Date",
-					style: { cursor: "pointer" },
-					x: 3, y: 0
-				}),
-				remove_keyframe: veButton((e) => {
-					DALS.Timeline.parseAction({
-						options: { name: "Delete Keyframe", key: "delete_keyframe" },
-						value: [
-							{ type: "Geometry", geometry_id: this.options._id(), remove_keyframe: local_key },
-							{ type: "global", refresh_date: true }
-						]
-					});
-				}, {
-					name: "<icon>delete</icon>",
-					tooltip: "Delete Keyframe",
-					style: { cursor: "pointer" },
-					x: 4, y: 0
+					style: {
+						display: "flex",
+						flexWrap: "nowrap",
+						"[component='ve-button']": { marginRight: "var(--padding)" }
+					},
+					x: 2, y: 0 
 				})
 			}, {
 				gc: true,
 				is_folder: false,
 				style: {
 					"> table > tbody > tr": {
-						"[id='0-0']": { width: "20%" },
-						"[id='1-0']": { width: "50%" }
+						"[id='0-0']": { width: "6rem" },
+						"[id='1-0']": { width: "50%" },
 					}
 				}
 			});

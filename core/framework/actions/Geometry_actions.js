@@ -22,10 +22,23 @@
  * - `.set_symbol`: {@link Object}
  *   - `._set_label_symbol`: {@link Object} - Private alias for `.set_label_symbol`.
  *   - `<symbol_key>`: {@link any}
+ *   
+ * - Variables:
+ * - `.add_column`: {@link Object}
+ *   - `.key`: {@link string}
+ *   - `.values`: {@link Array}<{@link Array}<{@link Object}|{@link number}, {@link any}, ...>> - [date, value] map.
+ * - `.add_variable`: {@link Object}
+ *   - `.date`: {@link Object}|{@link number}|{@link string} - If string, either 'start'/'end'.
+ *   - `.key`: {@link string}
+ *   - `.value`: {@link any}
+ * - `.remove_column`: {@link string}
+ * - `.remove_variable`: {@link Object}
+ *   - `.date`: {@link Object}|{@link number}|{@link string} - If string, either 'start'/'end'.
+ *   - `.key`: {@link string}
  *
  * @param {Object|string} arg0_json
  */
-naissance.Geometry.parseAction = function (arg0_json) {
+naissance.Geometry.parseAction = function (arg0_json) { //[WIP] - Add variable actions
 	//Convert from parameters
 	let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;
 	
@@ -42,6 +55,37 @@ naissance.Geometry.parseAction = function (arg0_json) {
 					json.set_label_symbol = json.set_symbol._set_label_symbol;
 					delete json.set_symbol._set_label_symbol;
 				}
+		}
+		
+		//add_column
+		if (typeof json.add_column === "object") {
+			if (!json.add_column.values) {
+				let first_keyframe = geometry_obj.history.getFirstKeyframe();
+				json.add_column.values = [[first_keyframe.timestamp, null]];
+			}
+			
+			//Iterate over all .values[n][0] dates; add keyframes at locations
+			for (let i = 0; i < json.add_column.values.length; i++)
+				geometry_obj.addKeyframe(json.add_column.values[i][0], undefined, undefined, {
+					variables: { [json.add_column.key]: json.add_column.values[i][1] }
+				});
+		}
+		
+		//add_variable
+		if (typeof json.add_variable === "object") {
+			let timestamp;
+				if (json.add_variable.date === "end") {
+					timestamp = geometry_obj.history.getLastKeyframe().timestamp;
+				} else if (json.add_variable.date === "start") {
+					timestamp = geometry_obj.history.getFirstKeyframe().timestamp;
+				} else {
+					timestamp = Date.getTimestamp((json.add_variable.date) ?
+						json.add_variable.date : main.date);
+				}
+			
+			geometry_obj.addKeyframe(timestamp, undefined, undefined, {
+				variables: { [json.add_variable.key]: json.add_variable.value }
+			});
 		}
 		
 		//clean_keyframes
@@ -80,10 +124,47 @@ naissance.Geometry.parseAction = function (arg0_json) {
 			geometry_obj.history.draw(geometry_obj.keyframes_ui);
 		}
 		
+		//remove_column
+		if (typeof json.remove_variable === "string") {
+			Object.iterate(geometry_obj.history, (local_key, local_value) => {
+				if (local_value?.value?.[2]?.variables)
+					delete local_value.value[2].variables[json.remove_variable];
+			});
+			geometry_obj.history.cleanKeyframes(); //Clean keyframes just in-case
+		}
+		
 		//remove_keyframe
 		if (json.remove_keyframe) {
 			geometry_obj.removeKeyframe(json.remove_keyframe);
 			geometry_obj.history.draw(geometry_obj.keyframes_ui);
+		}
+		
+		//remove_variable
+		if (typeof json.remove_variable === "object") {
+			let timestamp;
+				if (json.remove_variable.date === "end") {
+					timestamp = geometry_obj.history.getLastKeyframe().timestamp;
+				} else if (json.remove_variable.date === "start") {
+					timestamp = geometry_obj.history.getFirstKeyframe().timestamp;
+				} else {
+					timestamp = Date.getTimestamp((json.remove_variable.date) ?
+						json.remove_variable.date : main.date);
+				}
+			
+			let keyframe = geometry_obj.history.keyframes[timestamp];
+			
+			if (keyframe?.value?.[2]?.variables) {
+				delete keyframe.value[2].variables[json.remove_variable.key];
+				
+				if (Object.keys(keyframe.value[2].variables))
+					delete keyframe.value[2].variables;
+				if (
+					(keyframe.value[0] === "undefined" || !keyframe.value[0]) &&
+					(!keyframe.value[1]) &&
+					(Object.keys(keyframe.value[2]).length === 0)
+				)
+					geometry_obj.removeKeyframe(timestamp);
+			}
 		}
 		
 		//set_geometry

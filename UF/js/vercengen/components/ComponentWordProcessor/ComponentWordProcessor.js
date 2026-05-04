@@ -296,7 +296,7 @@ ve.WordProcessor = class extends ve.Component {
 		
 		//Add active tag event
 		document.addEventListener("selectionchange", (e) => {
-			this.selectionChange(e, buttons, editor);
+			if (typeof this.selectionChange === "function") this.selectionChange(e, buttons, editor);
 		});
 		
 		//Add paste event

@@ -277,12 +277,13 @@ naissance.Geometry = class extends ve.Class {
 	drawVariablesEditor () {
 		//Declare local instance variables
 		this.variables_ui = veInterface({
-			geometry_description: veWordProcessor(undefined, { //Loaded after 1 tick
+			geometry_description: veWordProcessor(this.metadata.description, { //Loaded after 1 tick
 				onuserchange: (v) => this.metadata.description = v
 			}),
 			actions_bar: veRawInterface({
 				open_variables_editor: veButton(() => {
 					if (this.variables_editor) this.variables_editor.close();
+					try { this.syncVariablesToSpreadsheet(); } catch (e) { console.error(e); } //Sync first
 					this.variables_editor = veWindow({
 						table_editor: veSpreadsheet(this.metadata.variables, {
 							dark_mode: true,
@@ -553,6 +554,139 @@ naissance.Geometry = class extends ve.Class {
 	show () {
 		this._is_visible = true;
 		this.draw();
+	}
+	
+	/**
+	 * Synchronises `.value[2].variables` in the Geometry's `.history` to the Variables Spreadsheet contained by the Geometry.
+	 * Resolves date equivalence using timestamps to prevent row duplication.
+	 * - Method of: {@link naissance.Geometry}
+	 */
+	//[QUARANTINE]
+	syncVariablesToSpreadsheet () {
+		//Declare local instance variables
+		let first_sheet_id;
+		let snapshot = (this.metadata.variables && this.metadata.variables.sheets) ?
+			this.metadata.variables : { is_snapshot: true, sheets: {}, sheetOrder: [] };
+		
+		//1. Initialise skeleton snapshot if it does not exist
+		if (snapshot.sheetOrder.length === 0) {
+			first_sheet_id = Class.generateRandomID();
+			snapshot.sheetOrder.push(first_sheet_id);
+			snapshot.sheets[first_sheet_id] = {
+				id: first_sheet_id,
+				name: "Variables",
+				cellData: { 0: { 0: { v: "Date", t: 1 } } },
+				columnCount: 20,
+				rowCount: 1000
+			};
+		}
+		
+		first_sheet_id = snapshot.sheetOrder[0];
+		let local_sheet = snapshot.sheets[first_sheet_id];
+		let local_cell_data = local_sheet.cellData;
+		
+		//2. Map existing Columns (headers) and Rows (via parsed Timestamps)
+		let col_map = {}; // { variable_name: index }
+		let timestamp_row_map = {}; // { timestamp_number: index }
+		let max_col = 0;
+		let max_row = 0;
+		
+		//Map headers from Row 0
+		if (local_cell_data[0])
+			Object.iterate(local_cell_data[0], (local_col_idx, local_cell) => {
+				let local_idx = parseInt(local_col_idx);
+				if (local_cell?.v) col_map[local_cell.v.toString()] = local_idx;
+				if (local_idx > max_col) max_col = local_idx;
+			});
+		
+		//Map existing rows by parsing Column 0 to identify dates correctly
+		Object.iterate(local_cell_data, (local_row_idx, local_row) => {
+			let local_idx = parseInt(local_row_idx);
+			if (local_idx > max_row) max_row = local_idx;
+			
+			let local_date_cell = local_row[0];
+			if (local_date_cell?.v != null && local_idx > 0) {
+				//Parse Date using existing convention to ensure match
+				let local_parsed_date = Date.convertStringToDate(local_date_cell.v.toString());
+				let local_ts = Date.getTimestamp(local_parsed_date);
+				
+				if (local_ts != null && !isNaN(local_ts))
+					timestamp_row_map[local_ts] = local_idx;
+			}
+		});
+		
+		//3. Iterate through History Keyframes and sync to cellData
+		Object.iterate(this.history.keyframes, (local_kf_id, local_keyframe) => {
+			let local_variables = local_keyframe.value[2]?.variables;
+			let local_kf_ts = Date.getTimestamp(local_keyframe.date);
+			
+			if (local_variables && local_kf_ts != null && !isNaN(local_kf_ts)) {
+				let target_row_idx = timestamp_row_map[local_kf_ts];
+				
+				//Create a new row if this timestamp does not exist in the table
+				if (target_row_idx === undefined) {
+					max_row++;
+					target_row_idx = max_row;
+					let local_date = local_keyframe.date;
+					let local_cell_obj = { t: 1 };
+					
+					//CONCISE FORMATTING: Store as Number (t: 2) if it is a plain year
+					if (local_date.month === 1 && local_date.day === 1 && local_date.hour === 0 && local_date.minute === 0) {
+						local_cell_obj.v = local_date.year;
+						local_cell_obj.t = 2;
+					} else {
+						//Build concise string only as long as necessary
+						let local_str = local_date.year.toString();
+						if (local_date.minute > 0) {
+							local_str += `.${local_date.month}.${local_date.day}.${local_date.hour}.${local_date.minute}`;
+						} else if (local_date.hour > 0) {
+							local_str += `.${local_date.month}.${local_date.day}.${local_date.hour}`;
+						} else if (local_date.day > 1) {
+							local_str += `.${local_date.month}.${local_date.day}`;
+						} else if (local_date.month > 1) {
+							local_str += `.${local_date.month}`;
+						}
+						local_cell_obj.v = local_str;
+					}
+					
+					local_cell_data[target_row_idx] = { 0: local_cell_obj };
+					timestamp_row_map[local_kf_ts] = target_row_idx;
+				}
+				
+				let target_row = local_cell_data[target_row_idx];
+				
+				Object.iterate(local_variables, (local_var_name, local_var_value) => {
+					//Ensure column exists for this variable
+					if (col_map[local_var_name] === undefined) {
+						max_col++;
+						col_map[local_var_name] = max_col;
+						if (!local_cell_data[0]) local_cell_data[0] = {};
+						local_cell_data[0][max_col] = { v: local_var_name, t: 1 };
+					}
+					let target_col_idx = col_map[local_var_name];
+					
+					//4. Sync only if the cell does not already contain a value
+					if (!target_row[target_col_idx] || target_row[target_col_idx].v == null) {
+						let local_cell_obj = {};
+						let local_val_str = (local_var_value != null) ? local_var_value.toString() : "";
+						
+						if (local_val_str.startsWith("=")) {
+							local_cell_obj.f = local_val_str;
+						} else {
+							local_cell_obj.v = local_var_value;
+							local_cell_obj.t = (typeof local_var_value === "number") ? 2 : 1;
+						}
+						target_row[target_col_idx] = local_cell_obj;
+					}
+				});
+			}
+		});
+		
+		//Update the metadata snapshot and push to the active editor UI
+		this.metadata.variables = snapshot;
+		
+		if (this.variables_editor?.instance?.table_editor)
+			this.variables_editor.instance.table_editor.fromJSON(snapshot);
 	}
 	
 	/**

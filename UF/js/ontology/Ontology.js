@@ -6,6 +6,8 @@
 	 * - `.date`: {@link number} - The date the Ontology event happened as a timestamp.
 	 * - `.type`: {@link string}
 	 * 
+	 * Ontologies are streamed from `.ontology` files at the device's maximum read-speed via inter-process communication (IPC). For most modern computers, this is ~1GB/s. They may be stream-queried in a separate process, piped to render, and disposed of as necessary.
+	 * 
 	 * ##### Constructor:
 	 * - `arg0_type="Ontology"`: {@link string} - The Ontology subclass/type to reference.
 	 * - `arg1_state_array`: {@link Array}<{ date: {@link number}, data: {@link Object}, ...argn_fields }>

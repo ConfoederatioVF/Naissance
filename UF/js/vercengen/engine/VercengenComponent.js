@@ -8,6 +8,7 @@
  *   - `.from_binding`: {@link string} - Related event: `.onprogramchange`. Unidirectional data binding.
  *   - `.to_binding`: {@link string} - Related event: `.onuserchange`. Unidirectional data binding.
  *   - 
+ *   - `.do_not_display=false`: {@link boolean} - If set to true, Component is not automatically displayed by {@link ve.Class}.
  *   - `.gc=false`: {@link boolean} - Whether to auto-remove the component upon being detached.
  *   - `.onchange`: {@link function}(this.v, this:{@link ve.Component})
  *   - `.onprogramchange`: {@link function}(this.v, this:{@link ve.Component})

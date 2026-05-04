@@ -6,6 +6,7 @@
  * ##### Constructor:
  * - `arg0_value`: {@link function}({@link MouseEvent}) - The function to call upon user click.
  * - `arg1_options`: {@link Object}
+ *   - `.disabled=false`: {@link boolean}
  * 
  * ##### Instance:
  * - `.v`: {@link function} - Accessor. The current function stored by the {@link ve.Button} component.
@@ -40,7 +41,9 @@ ve.Button = class extends ve.Component {
 		
 		//Format HTML string
 		this.button_el = document.createElement("button");
-			if (options.icon) {
+			if (this.options.disabled)
+				this.button_el.setAttribute("disabled", "true");
+			if (this.options.icon) {
 				this.icon_el = document.createElement("img");
 				this.icon_el.setAttribute("src", options.icon);
 				this.button_el.appendChild(this.icon_el);
