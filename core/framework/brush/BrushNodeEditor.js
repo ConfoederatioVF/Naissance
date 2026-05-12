@@ -189,6 +189,7 @@ naissance.GeometryPolygon.handleNodeEditorEnd = function (arg0_e) {
 	//Push action to timeline for selected geometry
 	if (main.brush.node_editor.mode === "add") {
 		e.geometry = main.brush.getAddPolygon(e.geometry);
+		if (!e.geometry) console.log(`Undefined geometry:`, e.geometry);
 		DALS.Timeline.parseAction({
 			options: { name: "Add to Polygon", key: "add_to_polygon" },
 			value: [{

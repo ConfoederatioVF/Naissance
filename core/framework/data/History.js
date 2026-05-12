@@ -130,7 +130,7 @@ naissance.History = class extends ve.Class {
 		}
 	}
 	
-	draw (arg0_interface_obj) {
+	draw (arg0_interface_obj) { //[WIP] - Context menus need to be better and to use DALS
 		//Convert from parameter
 		let interface_obj = arg0_interface_obj;
 		
@@ -149,7 +149,7 @@ naissance.History = class extends ve.Class {
 				}),
 				localisation: veHTML(() => 
 					(local_value.localisation) ? local_value.localisation : "", { x: 1, y: 0 }),
-				actions_bar: veRawInterface({
+				actions_bar:  veRawInterface({
 					jump_to_date: veButton((e) => {
 						DALS.Timeline.parseAction({
 							options: { name: "Set Date", key: "load_date" },
@@ -205,7 +205,7 @@ naissance.History = class extends ve.Class {
 						flexWrap: "nowrap",
 						"[component='ve-button']": { marginRight: "var(--padding)" }
 					},
-					x: 2, y: 0 
+					x: 2, y: 0
 				})
 			}, {
 				gc: true,
@@ -216,6 +216,20 @@ naissance.History = class extends ve.Class {
 						"[id='1-0']": { width: "50%" },
 					}
 				}
+			});
+			
+			let local_keyframe_ui = components_obj[`t_${local_key}`];
+			local_keyframe_ui.element.addEventListener("contextmenu", (e) => {
+				if (this.keyframe_context_menu) this.keyframe_context_menu.close();
+				
+				this.keyframe_context_menu = veContextMenu({
+					copy_geometry_to_date: veButton(() => {
+						let timestamp = Date.getTimestamp(main.date);
+						
+						this.addKeyframe(timestamp, ...[local_value.value[0]]);
+						veToast(`Copied geometry keyframe to present date.`);
+					}, { name: "Copy Geometry To Date" })
+				}, { id: "ui_keyframe_context_menu" })
 			});
 		}, { sort_mode: "date_descending" });
 		

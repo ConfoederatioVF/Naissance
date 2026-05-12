@@ -1,7 +1,8 @@
 config.mapmodes.livemap_Collation = {
 	name: "Collation (Livemap)",
 	icon: "visibility",
-	tooltip: "Because this is a live feed, geometries in this mapmode are always rendered on top of others when enabled.",
+	description: `Streams live intelligence into Naissance. Workers must be active for real-time data. These workers can be toggled from the map overlay menu.`,
+	tooltip: "Live intelligence from active Ontologies.",
 
   onhide: function (v) {
     //Declare local instance variables
