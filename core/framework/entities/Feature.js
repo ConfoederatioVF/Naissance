@@ -320,6 +320,10 @@ naissance.Feature = class extends ve.Class {
 							name: `Simplify Threshold`,
 							onuserchange: (v) => this.ui.simplify_threshold = v
 						}),
+						truncate_coordinates: veNumber(Math.returnSafeNumber(this.ui.truncate_threshold, -1), {
+							name: "Truncate Coordinates",
+							onuserchange: (v) => this.ui.truncate_threshold = v
+						}),
 						confirm: veButton(() => {
 							//Declare local instance variables
 							let simplify_threshold = Math.returnSafeNumber(this.ui.simplify_threshold, 0.01);
@@ -330,10 +334,13 @@ naissance.Feature = class extends ve.Class {
 									value: [{
 										type: "Feature",
 										feature_id: this.id,
-										simplify_all_polygons: simplify_threshold
+										simplify_all_polygons: {
+											tolerance: simplify_threshold,
+											truncate: this.ui.truncate_threshold
+										}
 									}]
 								});
-								veToast(`Simplified all geometries by ${String.formatNumber(simplify_threshold)}`)
+								veToast(`Simplified all geometries by ${String.formatNumber(simplify_threshold, 2)}.`);
 							} catch (e) { console.error(e); }
 						}, { name: "Confirm" })
 					}, { name: "Simplify Polygons", can_rename: false });

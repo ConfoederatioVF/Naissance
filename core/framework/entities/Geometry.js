@@ -762,14 +762,14 @@ naissance.Geometry = class extends ve.Class {
 		//Add to DALS
 		if (options.date) {
 			old_date = JSON.parse(JSON.stringify(main.date));
-			main.date = options.date;
+			UI_DateMenu.setDate(options.date);
 		}
 		DALS.Timeline.parseAction({
 			options: { name: options.name, key: options.key },
 			value: dals_value_array
 		});
 		if (options.date)
-			main.date = old_date;
+			UI_DateMenu.setDate(old_date);
 	};
 	
 	static setGeometries (arg0_geometry_ids, arg1_geometries, arg2_options) { 

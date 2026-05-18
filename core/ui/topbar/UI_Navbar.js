@@ -34,7 +34,8 @@ global.UI_Navbar = class {
 					name: "Keybinds"
 				},
 				toggle_ui: {
-					name: "Toggle UI"
+					name: "Toggle UI",
+					onclick: () => naissance.Renderer.toggleUI()
 				},
 				zoom_in: {
 					name: "Zoom In",

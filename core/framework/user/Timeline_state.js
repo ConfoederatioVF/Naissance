@@ -16,7 +16,7 @@
 				if (json.value[i].load_save)
 					DALS.Timeline.loadState(json.value[i].load_save);
 				if (json.value[i].set_date) {
-					main.date = json.value[i].set_date;
+					UI_DateMenu.setDate(json.value[i].set_date);
 				} else if (json.value[i].refresh_date === true) {
 					naissance.Geometry.instances.forEach((local_geometry) => local_geometry.draw());
 				}

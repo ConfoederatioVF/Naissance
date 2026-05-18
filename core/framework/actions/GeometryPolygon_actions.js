@@ -27,6 +27,7 @@
  *   - `.date=main.date`: {@link Object}
  *   - `.date_range`: {@link Array}<{@link Object}> - [start_date, end_date]; both are Date objects or timestamps.
  *   - `.tolerance`: {@link number}
+ *   - `.truncate`: {@link number}
  */
 naissance.GeometryPolygon.parseAction = function (arg0_json) {
 	//Convert from parameters
@@ -171,6 +172,9 @@ naissance.GeometryPolygon.parseAction = function (arg0_json) {
 					
 					if (json.simplify_polygon.date_range) {
 						_parseGeometryActionsInDateRange(json.simplify_polygon.date_range, (local_keyframe) => {
+							let local_simplify_options = json.simplify_polygon;
+								delete local_simplify_options.date_range;
+								
 							DALS.Timeline.parseAction({
 								options: { name: "Simplify Polygon", key: "simplify_polygon" },
 								value: [{
@@ -178,7 +182,8 @@ naissance.GeometryPolygon.parseAction = function (arg0_json) {
 									geometry_id: polygon_obj.id,
 									simplify_polygon: {
 										date: local_keyframe,
-										tolerance: tolerance
+										tolerance: tolerance,
+										...local_simplify_options
 									}
 								}]
 							}, true);
@@ -188,7 +193,9 @@ naissance.GeometryPolygon.parseAction = function (arg0_json) {
 							polygon_obj.getGeometryKeyframeAtDate(date) : polygon_obj.geometry;
 						
 						if (geometry) try {
-							let turf_simplify = turf.simplify(Geospatiale.convertMaptalksToTurf(geometry), { tolerance: tolerance })
+							let turf_simplify = turf.simplify(Geospatiale.convertMaptalksToTurf(geometry), { tolerance: tolerance });
+								if (json.simplify_polygon.truncate > 0)
+									turf_simplify = turf.truncate(turf_simplify, { precision: json.simplify_polygon.truncate });
 							
 							polygon_obj.addKeyframe(date, (turf_simplify) ?
 								Geospatiale.convertTurfToMaptalks(turf_simplify).toJSON() : null);
@@ -209,7 +216,13 @@ naissance.GeometryPolygon.parseAction = function (arg0_json) {
 					let geometry = maptalks.Geometry.fromJSON(local_geometry);
 					
 					if (geometry) try {
-						let turf_simplify = turf.simplify(Geospatiale.convertMaptalksToTurf(geometry), { tolerance: json.simplify_polygon_for_all_keyframes });
+						let turf_simplify = turf.simplify(Geospatiale.convertMaptalksToTurf(geometry), { 
+							tolerance: json.simplify_polygon_for_all_keyframes.tolerance
+						});
+						if (json.simplify_polygon_for_all_keyframes.truncate > 0)
+							turf_simplify = turf.truncate(turf_simplify, { 
+								precision: json.simplify_polygon_for_all_keyframes.truncate 
+							});
 						
 						local_value.value[0] = Geospatiale.convertTurfToMaptalks(turf_simplify).toJSON();
 					} catch (e) { console.error(`Error simplifying ${polygon_obj.name}:`, local_value, e); }

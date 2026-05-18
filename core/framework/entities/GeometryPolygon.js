@@ -74,6 +74,70 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		this.updateOwner();
 	}
 	
+	_drawLabels () {
+		if (this.value[2]) { //[WIP] - Refactor labelling logic at a later date
+			//Declare local instance variables
+			let brush_symbol = main.brush.getBrushSymbol();
+			let hide_labels_under_km2 = Math.returnSafeNumber(main.settings.hide_labels_under_km2, 1000);
+			
+			//Fetch this.value[2].label_coordinates, this.value[2].label_name/name, this.value[2].label_symbol
+			if (this.geometry && !this.value[2]?.label_symbol?.hide) {
+				let label_geometries = (this.value[2].label_geometries) ?
+					this.value[2].label_geometries : [];
+				let label_name = (this.value[2].label_name) ?
+					this.value[2].label_name : this.value[2].name;
+				
+				//1. .label_coordinates
+				if (label_geometries.length === 0) {
+					if (!this.geometry.getGeometries) {
+						this.label_geometries[0] = new maptalks.Marker(this.geometry.getCenter());
+						this.label_geometries[0].area = this.geometry.getArea();
+					} else {
+						let all_geometries = this.geometry.getGeometries();
+						
+						for (let i = 0; i < all_geometries.length; i++) {
+							let local_area = all_geometries[i].getArea();
+							if (local_area < hide_labels_under_km2*1000000 && i > 0) continue; //Internal guard clause for small exclaves <1000km^2
+							
+							let local_label_geometry = new maptalks.Marker(all_geometries[i].getCenter());
+							local_label_geometry.area = local_area;
+							this.label_geometries.push(local_label_geometry);
+						}
+					}
+				} else {
+					for (let i = 0; i < label_geometries.length; i++)
+						this.label_geometries[i] = maptalks.Geometry.fromJSON(label_geometries[i]);
+				}
+				
+				//Iterate over all this.label_geometries, apply settings
+				for (let i = 0; i < this.label_geometries.length; i++) {
+					let local_label_geometry = this.label_geometries[i];
+					if (!local_label_geometry) continue;
+					
+					//2. .label_name/.name
+					if (label_geometries.length === 0) {
+						this.label_geometries[i].setSymbol({
+							textName: label_name,
+							
+							textFaceName: brush_symbol.textFaceName,
+							textFill: brush_symbol.textFill,
+							textHaloFill: brush_symbol.textHaloFill,
+							textHaloRadius: brush_symbol.textHaloRadius,
+							textSize: brush_symbol.textSize,
+							...this.value[2].label_symbol
+						});
+						
+						if (main.settings.hide_labels_by_default)
+							this.label_geometries[i].hide();
+					}
+					if (local_label_geometry.area !== undefined)
+						local_label_geometry.setZIndex(-local_label_geometry.area);
+					local_label_geometry.addTo(main.layers.label_layer);
+				}
+			}
+		}
+	}
+	
 	draw () {
 		//Declare local instance variables
 		let brush_symbol = main.brush.getBrushSymbol();
@@ -108,52 +172,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 					this.geometry = maptalks.Geometry.fromJSON(this.value[0]);
 					if (this.value[1] && this.geometry) this.geometry.setSymbol(this.value[1]);
 					main.layers.entity_layer.addGeometry(this.geometry);
-				}
-				if (this.value[2]) {
-					//Fetch this.value[2].label_coordinates, this.value[2].label_name/name, this.value[2].label_symbol
-					if (this.geometry && !this.value[2]?.label_symbol?.hide) {
-						let label_geometries = (this.value[2].label_geometries) ?
-							this.value[2].label_geometries : [];
-						let label_name = (this.value[2].label_name) ? 
-							this.value[2].label_name : this.value[2].name;
-						
-						//1. .label_coordinates
-						if (label_geometries.length === 0) {
-							if (!this.geometry.getGeometries) {
-								this.label_geometries[0] = new maptalks.Marker(this.geometry.getCenter());
-							} else {
-								let all_geometries = this.geometry.getGeometries();
-								
-								for (let i = 0; i < all_geometries.length; i++)
-									this.label_geometries[i] = new maptalks.Marker(all_geometries[i].getCenter());
-							}
-						} else {
-							for (let i = 0; i < label_geometries.length; i++)
-								this.label_geometries[i] = maptalks.Geometry.fromJSON(label_geometries[i]);
-						}
-						
-						//Iterate over all this.label_geometries, apply settings
-						for (let i = 0; i < this.label_geometries.length; i++) {
-							//2. .label_name/.name
-							if (label_geometries.length === 0) {
-								this.label_geometries[i].setSymbol({
-									textName: label_name,
-									
-									textFaceName: brush_symbol.textFaceName,
-									textFill: brush_symbol.textFill,
-									textHaloFill: brush_symbol.textHaloFill,
-									textHaloRadius: brush_symbol.textHaloRadius,
-									textSize: brush_symbol.textSize,
-									...this.value[2].label_symbol
-								});
-								
-								if (main.settings.hide_labels_by_default)
-									this.label_geometries[i].hide();
-							}
-								
-							this.label_geometries[i].addTo(main.layers.label_layer);
-						}
-					}
+					this._drawLabels();
 				}
 			} catch (e) { console.error(e); }
 			

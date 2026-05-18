@@ -81,4 +81,27 @@ naissance.Renderer = class extends ve.Class {
 			if (rendering_order[i].draw)
 				rendering_order[i].draw();
 	}
+	
+	static toggleUI () {
+		let all_interface_els = document.querySelectorAll(`#ve-overlay > .ve`);
+		naissance.Renderer.hide_ui = (!naissance.Renderer.hide_ui);
+		
+		if (naissance.Renderer.hide_ui) {
+			for (let i = 0; i < all_interface_els.length; i++) {
+				if (all_interface_els[i].getAttribute("data-do-not-toggle-ui")) continue;
+				let local_display = all_interface_els[i].style.display;
+				
+				if (local_display !== "")
+					all_interface_els[i].setAttribute("data-display", JSON.parse(JSON.stringify(all_interface_els[i].style.display)));
+				all_interface_els[i].style.display = "none";
+			}
+		} else {
+			for (let i = 0; i < all_interface_els.length; i++) {
+				let local_data_display = all_interface_els[i].getAttribute("data-display");
+				
+				all_interface_els[i].style.display = (local_data_display) ? local_data_display : "";
+				all_interface_els[i].removeAttribute("data-display");
+			}
+		}
+	}
 };

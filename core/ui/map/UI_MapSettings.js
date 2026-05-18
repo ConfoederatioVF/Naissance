@@ -127,9 +127,9 @@ global.UI_MapSettings = class UI_MapSettings extends ve.Class { //[WIP] - Finish
 		//Set date
 		if (json.date)
 			if (main.map.settings.autoload_last_date) {
-				main.date = JSON.parse(json.date);
+				UI_DateMenu.setDate(JSON.parse(json.date));
 			} else if (main.map.settings.constant_load_date) {
-				main.date = main.map.settings.constant_load_date
+				UI_DateMenu.setDate(main.map.settings.constant_load_date);
 			}
 		//Set spatial reference
 		if (json.spatial_reference)

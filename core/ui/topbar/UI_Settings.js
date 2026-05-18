@@ -143,6 +143,14 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 											UI_Settings.saveSettings();
 										}
 									}),
+									hide_labels_under_km2: veNumber(Math.returnSafeNumber(main.settings.hide_labels_under_km2, 1000), {
+										name: "Hide Labels Under Area (km^2)",
+										tooltip: "Labels will not appear for exclaves under this area.",
+										onuserchange: (v) => {
+											main.settings.hide_labels_under_km2 = v;
+											UI_Settings.saveSettings();
+										}
+									}),
 									
 									default_label_colour: veColour((main.settings.default_label_colour) ? main.settings.default_label_colour : [255, 255, 255], {
 										name: "Font Colour",
